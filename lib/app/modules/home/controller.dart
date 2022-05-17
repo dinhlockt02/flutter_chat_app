@@ -2,11 +2,13 @@ import 'package:chat_app/app/routes/routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../main.dart';
 import '../../data/models/chat_user.dart';
 
 class HomeController extends GetxController {
@@ -23,7 +25,18 @@ class HomeController extends GetxController {
     fetchOtherUser();
   }
 
+  initState() async {
+    final message = await FirebaseMessaging.instance.getInitialMessage();
+    if (message != null) {
+      firebaseMessagingBackgroundHandler(message);
+    }
+  }
+
   Future<void> signout() async {
+    await FirebaseFirestore.instance
+        .collection('chat_users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .update({'token': null});
     auth.signOut();
     GoogleSignIn().signOut();
   }

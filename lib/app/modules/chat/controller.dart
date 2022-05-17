@@ -5,8 +5,10 @@ import 'package:chat_app/app/data/models/chat_message.dart';
 import 'package:chat_app/core/values/consts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart';
 
 import '../../data/models/chat_user.dart';
 
@@ -112,6 +114,7 @@ class ChatController extends GetxController {
         db.runTransaction((transaction) async {
           documentReference.set(chatMessage);
           messageInputController.text = "";
+          sendFcmMessage(currentUser.value?.displayName, chatMessage.message);
         });
       });
     } else {
@@ -135,11 +138,46 @@ class ChatController extends GetxController {
       db.runTransaction((transaction) async {
         documentReference.set(chatMessage);
         messageInputController.text = "";
+        if (peerUser.value?.token != null)
+          sendFcmMessage(currentUser.value?.displayName, chatMessage.message);
       });
     }
   }
 
   bool isMessageSend(int idx) {
     return messages[idx].idFrom == auth.currentUser?.uid;
+  }
+
+  Future<bool> sendFcmMessage(String? title, String? message) async {
+    try {
+      var url = 'https://fcm.googleapis.com/fcm/send';
+      var header = {
+        "Content-Type": "application/json",
+        "Authorization": "key=${AppConsts.cloudMessagingServerKey}",
+      };
+      var request = {
+        "notification": {
+          "title": title ?? "",
+          "body": message ?? "",
+          "sound": "default",
+          "color": Get.theme.primaryColor.value.toRadixString(16),
+        },
+        "priority": "high",
+        "to": peerUser.value!.token,
+        "data": {
+          "receiverId": peerUser.value?.id ?? "",
+          "senderId": auth.currentUser?.uid ?? "",
+          "click_action": "FLUTTER_NOTIFICATION_CLICK"
+        }
+      };
+
+      var dio = Dio();
+      var response =
+          await dio.post(url, options: Options(headers: header), data: request);
+      return true;
+    } catch (e, s) {
+      print(e);
+      return false;
+    }
   }
 }

@@ -5,6 +5,7 @@ import 'package:chat_app/app/data/models/chat_user.dart';
 import 'package:chat_app/app/routes/routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -54,6 +55,11 @@ class LoginController extends GetxController {
         return;
       }
       await createUserIfNotExists(firebaseUser);
+      final token = await FirebaseMessaging.instance.getToken();
+      await FirebaseFirestore.instance
+          .collection('chat_users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .update({'token': token});
       status.value = AuthStatus.authenticated;
     } on PlatformException catch (e) {
       status.value = AuthStatus.authenticateError;

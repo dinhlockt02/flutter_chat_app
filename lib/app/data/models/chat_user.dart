@@ -6,8 +6,9 @@ class ChatUser {
   final String displayName;
   final String photoUrl;
   final String aboutMe;
+  String? token;
 
-  const ChatUser({
+  ChatUser({
     required this.id,
     required this.email,
     required this.displayName,
@@ -35,6 +36,7 @@ class ChatUser {
         email = snapshot.data()?["email"],
         displayName = snapshot.data()?["displayName"],
         photoUrl = snapshot.data()?["photoUrl"],
+        token = snapshot.data()?["token"],
         aboutMe = snapshot.data()?["aboutMe"];
 
   Map<String, dynamic> toFirestore() {
