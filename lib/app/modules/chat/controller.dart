@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:async/async.dart';
 import 'package:chat_app/app/data/models/chat_message.dart';
 import 'package:chat_app/core/values/consts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -33,10 +36,13 @@ class ChatController extends GetxController {
         final document = docs.first;
         groupChatId.value = document.id;
       } else {
-        await db.collection(AppConsts.FirebaseChatRoomCollection).doc().set({
-          'memberIds': {
-            auth.currentUser!.uid: true,
-            peerUser.value!.id: true,
+        StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+            subscriptionStream;
+        subscriptionStream = documentRef.snapshots().listen((event) {
+          if (event.docs.isNotEmpty) {
+            groupChatId.value = event.docs.first.id;
+            getChatMessage();
+            subscriptionStream?.cancel();
           }
         });
       }
@@ -54,7 +60,9 @@ class ChatController extends GetxController {
   }
 
   void getChatMessage() {
-    if (groupChatId.value.isEmpty) return;
+    if (groupChatId.value.isEmpty) {
+      return;
+    }
     db
         .collection(AppConsts.FirebaseChatRoomCollection)
         .doc(groupChatId.value)
@@ -80,26 +88,55 @@ class ChatController extends GetxController {
     if (message.isEmpty) return;
     if (currentUserId == null) return;
     if (peerId == null) return;
-    final documentReference = db
-        .collection(AppConsts.FirebaseChatRoomCollection)
-        .doc(groupChatId.value)
-        .collection('messages')
-        .withConverter(
-          fromFirestore: ChatMessage.fromFirestore,
-          toFirestore: (ChatMessage chatmsg, options) => chatmsg.toFirestore(),
-        )
-        .doc();
-    final chatMessage = ChatMessage(
-        id: documentReference.id,
-        idFrom: currentUserId,
-        idTo: peerId,
-        message: message,
-        timestamp: Timestamp.now());
+    if (groupChatId.value.isEmpty) {
+      db.collection(AppConsts.FirebaseChatRoomCollection).doc().set({
+        'memberIds': {auth.currentUser!.uid: true, peerUser.value!.id: true}
+      }).then((_) {
+        final documentReference = db
+            .collection(AppConsts.FirebaseChatRoomCollection)
+            .doc(groupChatId.value)
+            .collection('messages')
+            .withConverter(
+              fromFirestore: ChatMessage.fromFirestore,
+              toFirestore: (ChatMessage chatmsg, options) =>
+                  chatmsg.toFirestore(),
+            )
+            .doc();
+        final chatMessage = ChatMessage(
+            id: documentReference.id,
+            idFrom: currentUserId,
+            idTo: peerId,
+            message: message,
+            timestamp: Timestamp.now());
 
-    db.runTransaction((transaction) async {
-      documentReference.set(chatMessage);
-      messageInputController.text = "";
-    });
+        db.runTransaction((transaction) async {
+          documentReference.set(chatMessage);
+          messageInputController.text = "";
+        });
+      });
+    } else {
+      final documentReference = db
+          .collection(AppConsts.FirebaseChatRoomCollection)
+          .doc(groupChatId.value)
+          .collection('messages')
+          .withConverter(
+            fromFirestore: ChatMessage.fromFirestore,
+            toFirestore: (ChatMessage chatmsg, options) =>
+                chatmsg.toFirestore(),
+          )
+          .doc();
+      final chatMessage = ChatMessage(
+          id: documentReference.id,
+          idFrom: currentUserId,
+          idTo: peerId,
+          message: message,
+          timestamp: Timestamp.now());
+
+      db.runTransaction((transaction) async {
+        documentReference.set(chatMessage);
+        messageInputController.text = "";
+      });
+    }
   }
 
   bool isMessageSend(int idx) {

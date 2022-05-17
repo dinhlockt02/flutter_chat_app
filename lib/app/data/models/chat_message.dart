@@ -5,14 +5,14 @@ class ChatMessage {
   final String idFrom;
   final String idTo;
   final String message;
-  final Timestamp timestamp;
+  Timestamp? timestamp;
 
-  const ChatMessage({
+  ChatMessage({
     required this.id,
     required this.idFrom,
     required this.idTo,
     required this.message,
-    required this.timestamp,
+    this.timestamp,
   });
 
   ChatMessage.fromFirestore(

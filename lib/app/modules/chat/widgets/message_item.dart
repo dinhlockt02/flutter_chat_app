@@ -64,7 +64,11 @@ class MessageItem extends StatelessWidget {
                 height: 10,
               ),
               Text(
-                DateFormat.yMd().add_jm().format(message.timestamp.toDate()),
+                message.timestamp != null
+                    ? DateFormat.yMd()
+                        .add_jm()
+                        .format(message.timestamp!.toDate())
+                    : "",
                 style: const TextStyle(fontSize: 10),
               )
             ],
@@ -118,7 +122,11 @@ class MessageItem extends StatelessWidget {
                 height: 10,
               ),
               Text(
-                DateFormat.yMd().add_jm().format(message.timestamp.toDate()),
+                message.timestamp != null
+                    ? DateFormat.yMd()
+                        .add_jm()
+                        .format(message.timestamp!.toDate())
+                    : "",
                 style: const TextStyle(fontSize: 10),
               )
             ],

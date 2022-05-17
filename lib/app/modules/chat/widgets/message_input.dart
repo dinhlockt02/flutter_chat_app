@@ -23,6 +23,8 @@ class MessageInput extends StatelessWidget {
               decoration: const InputDecoration(
                 labelText: 'Message',
               ),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => chatController.sendChatMessage(),
               controller: chatController.messageInputController,
             ),
           ),
